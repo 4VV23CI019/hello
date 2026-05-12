@@ -1,87 +1,17 @@
-import pandas as pd, numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import LSTM, Dense
+devops folder->dockerimage->sample.py and dockerfile  [print("hello")]
 
-# Load + filter
-data = pd.read_csv("VegetablePrice.csv")
-data = data[data['Commodity']=="Tomato Big(Nepali)"].sort_values('Date')
+FROM python
+WORKDIR /app
+COPY . /app
+CMD ["python","sample.py"]
 
-# Scale
-scaler = MinMaxScaler()
-p = scaler.fit_transform(data[['Average']].values)
+in vs terminal
+docker build -t test1 .
+docker run --name cont1 test1
 
-# Create sequences
-t = 10
-X = np.array([p[i:i+t] for i in range(len(p)-t)])
-y = np.array([p[i+t] for i in range(len(p)-t)])
+go to docker images->copy the tag
+in vs terminal
+docker image tag <copied tag> <username>/test1
+docker push <username>/test1:latest
 
-# Model
-model = Sequential([LSTM(50, return_sequences=True, input_shape=(t,1)),
-                    LSTM(50), Dense(1)])
-
-model.compile('adam', 'mse')
-model.fit(X, y, epochs=10, batch_size=32)
-
-# Predict
-pred = scaler.inverse_transform(model.predict(X))
-print(pred[:5])
-
-
-import numpy as np, matplotlib.pyplot as plt
-from tensorflow.keras import Model, Input
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.datasets import mnist
-
-# Load + preprocess
-(x,_),(xt,_) = mnist.load_data()
-x, xt = x/255.0, xt/255.0
-x, xt = x.reshape(-1,784), xt.reshape(-1,784)
-
-# Model
-i = Input((784,))
-l = Dense(32, activation='relu')(Dense(64, activation='relu')(Dense(128, activation='relu')(i)))
-o = Dense(784, activation='sigmoid')(Dense(128, activation='relu')(Dense(64, activation='relu')(l)))
-m = Model(i, o)
-m.compile('adam','binary_crossentropy')
-
-# Train
-m.fit(x, x, epochs=10, batch_size=256, validation_data=(xt, xt))
-
-# Predict
-d = m.predict(xt)
-
-# Plot
-plt.figure(figsize=(20,4))
-for i in range(10):
-    plt.subplot(2,10,i+1); plt.imshow(xt[i].reshape(28,28), cmap='gray')
-    plt.subplot(2,10,i+11); plt.imshow(d[i].reshape(28,28), cmap='gray')
-plt.show()
-
-
-from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Flatten, Dense
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
-# Load pretrained ResNet50
-base_model = ResNet50(weights='imagenet',
-                      include_top=False,
-                      input_shape=(224, 224, 3))
-
-# Freeze layers
-for layer in base_model.layers:
-    layer.trainable = False
-
-# Build model
-model = Sequential([
-    base_model,
-    Flatten(),
-    Dense(128, activation='relu'),
-    Dense(10, activation='softmax')
-])
-
-# Compile model
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+go to docker hub->search-><username>/test1
